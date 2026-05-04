@@ -1,40 +1,53 @@
 import pygame
+import os
+import sys
+#esto es de chat gpt, no me quiere correr el ejecutable jaja
+def ruta_archivo(ruta):
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, ruta)
+    return ruta
+
 
 # Inicialización de Pygame
 pygame.init()
-
+pygame.mixer.init()
 # Configuración de la pantalla
 ANCHO, ALTO = 800, 600
 pantalla = pygame.display.set_mode((ANCHO, ALTO))
 pygame.display.set_caption("Juego marcianito")
 
 # Cargar y ajustar la imagen de fondo
-fondo = pygame.image.load("items/fondo.jpg").convert()
+fondo = pygame.image.load(ruta_archivo("assets/items/fondo.jpg")).convert()
 fondo = pygame.transform.scale(fondo, (ANCHO, ALTO))  # Ajusta al tamaño de la pantalla
+
+fondo_menu = pygame.image.load((ruta_archivo("assets/items/menusito.png"))).convert()
+fondo_menu = pygame.transform.scale(fondo_menu, (ANCHO, ALTO))
+
 
 # Cargar sprites del personaje para animación de caminar
 sprites_caminar = [
-    pygame.image.load("personaje1/frame1_001.png").convert_alpha(),
-    pygame.image.load("personaje1/frame2_002.png").convert_alpha(),
-    pygame.image.load("personaje1/frame3_003.png").convert_alpha(),
-    pygame.image.load("personaje1/frame4_004.png").convert_alpha(),
-    pygame.image.load("personaje1/frame5_005.png").convert_alpha(),
-    pygame.image.load("personaje1/frame6_006.png").convert_alpha(),
+    pygame.image.load(ruta_archivo("assets/personaje1/frame1_001.png")).convert_alpha(),
+    pygame.image.load(ruta_archivo("assets/personaje1/frame2_002.png")).convert_alpha(),
+    pygame.image.load(ruta_archivo("assets/personaje1/frame3_003.png")).convert_alpha(),
+    pygame.image.load(ruta_archivo("assets/personaje1/frame4_004.png")).convert_alpha(),
+    pygame.image.load(ruta_archivo("assets/personaje1/frame5_005.png")).convert_alpha(),
+    pygame.image.load(ruta_archivo("assets/personaje1/frame6_006.png")).convert_alpha(),
 ]
 
-# Sprite para animación de ataque (puedes agregar más frames si lo deseas)
+# Sprite para animación de ataque
 sprites_ataque = [
-    pygame.image.load("personaje1/frame1_001.png").convert_alpha()
+    pygame.image.load(ruta_archivo("assets/personaje1/frame1_001.png")).convert_alpha()
 ]
 
 # Cargar sprites del enemigo para su animación
 sprites_enemigo = [
-    pygame.image.load("personaje2/frame_001.png").convert_alpha(),
-    pygame.image.load("personaje2/frame_002.png").convert_alpha()
+    pygame.image.load(ruta_archivo("assets/personaje2/frame_001.png")).convert_alpha(),
+    pygame.image.load(ruta_archivo("assets/personaje2/frame_002.png")).convert_alpha()
 ]
 
 # Cargar imagen de la bala
-bala_img = pygame.image.load("items/fireball.png").convert_alpha()
+bala_img = pygame.image.load(ruta_archivo("assets/items/fireball.png")).convert_alpha()
+bala_img = pygame.transform.scale(bala_img, (40, 40))
 
 # Configuración de fuentes para mostrar texto en pantalla
 fuente = pygame.font.SysFont(None, 36)
@@ -78,6 +91,55 @@ game_over = False  # Estado del juego
 reloj = pygame.time.Clock()
 jugando = True  # Estado principal del juego
 
+menu = True
+musica_activa = True
+
+#sonidos
+sonido_disparo = pygame.mixer.Sound(ruta_archivo("assets/sonidos/pluh.mp3"))
+pygame.mixer.music.load(ruta_archivo("assets/sonidos/white_records-dark-gladiator-epic-background-music-for-video-stories-37-second-490015.mp3"))
+sonido_golpe = pygame.mixer.Sound(ruta_archivo("assets/sonidos/fahhhhhhhhhhhhhh.mp3"))
+
+
+roca = pygame.image.load(ruta_archivo("assets/items/roca-removebg-preview.png")).convert_alpha()
+roca = pygame.transform.scale(roca, (80, 80))
+
+goku = pygame.image.load(ruta_archivo("assets/items/goku_volando-removebg-preview.png")).convert_alpha()
+goku = pygame.transform.scale(goku, (100, 80))
+goku_x = 0
+
+pygame.mixer.music.play(-1)
+while menu:
+    pantalla.blit(fondo_menu, (0, 0))
+
+    texto_inicio = fuente.render("ENTER para iniciar", True, (255,255,255))
+    texto_musica = fuente.render("M para musica ON/OFF", True, (255,255,255))
+    texto_salir = fuente.render("ESC para salir", True, (255,255,255))
+
+    pantalla.blit(texto_inicio, (250, 200))
+    pantalla.blit(texto_musica, (250, 250))
+    pantalla.blit(texto_salir, (250, 300))
+
+    pygame.display.flip()
+
+    for evento in pygame.event.get():
+        if evento.type == pygame.QUIT:
+            menu = False
+            jugando = False
+        if evento.type == pygame.KEYDOWN:
+            if evento.key == pygame.K_RETURN:
+                pygame.mixer.music.stop() 
+                menu = False
+            if evento.key == pygame.K_m:
+                musica_activa = not musica_activa
+
+                if musica_activa:
+                    pygame.mixer.music.play(-1)
+                else:
+                    pygame.mixer.music.stop()
+            if evento.key == pygame.K_ESCAPE:
+                menu = False
+                jugando = False
+
 # Bucle principal del juego
 while jugando:
     # Manejo de eventos
@@ -87,6 +149,7 @@ while jugando:
         if evento.type == pygame.KEYDOWN:
             if evento.key == pygame.K_a and not game_over:
                 atacando = True  # Activar estado de ataque
+                sonido_disparo.play()  # Reproducir sonido de disparo
                 # Crear una nueva bala
                 bala = {
                     "rect": bala_img.get_rect(midleft=(pos_x + 60, pos_y + 40)),
@@ -98,12 +161,31 @@ while jugando:
 
     # Mostrar pantalla de Game Over
     if game_over:
-        pantalla.fill((0, 0, 0))  # Fondo negro
+        pantalla.fill((0, 0, 0))
+
         texto_final = fuente_grande.render("GAME OVER", True, (255, 0, 0))
-        texto_final_rect = texto_final.get_rect(center=(ANCHO // 2, ALTO // 2))
-        pantalla.blit(texto_final, texto_final_rect)
+        pantalla.blit(texto_final, (250, 200))
+
+        texto_reiniciar = fuente.render("Presiona R para reiniciar", True, (255,255,255))
+        pantalla.blit(texto_reiniciar, (250, 300))
+
+        texto_salir = fuente.render("ESC para salir", True, (255,255,255))
+        pantalla.blit(texto_salir, (250, 350))
+
         pygame.display.flip()
 
+        if teclas[pygame.K_ESCAPE]:
+            jugando = False
+
+        if teclas[pygame.K_r]:
+            vidas = 3
+            enemigos.clear()
+            balas.clear()
+            pos_x = 100
+            pos_y = suelo_y
+            game_over = False
+
+        continue
         # Salir del juego al presionar ESC
         if teclas[pygame.K_ESCAPE]:
             jugando = False
@@ -165,12 +247,14 @@ while jugando:
         # Colisión con bala
         for bala in balas:
             if bala["activa"] and bala["rect"].colliderect(enemigo_rect):
+                sonido_golpe.play()  # Reproducir sonido de golpe
                 enemigos.remove(enemigo)
                 bala["activa"] = False
                 break
 
         # Colisión con el personaje
         if personaje_rect.colliderect(enemigo_rect):
+            sonido_golpe.play()  # Reproducir sonido de golpe
             vidas -= 1
             enemigos.remove(enemigo)
             print(f"Vidas restantes: {vidas}")
@@ -191,6 +275,13 @@ while jugando:
     # Dibujar fondo y suelo
     pantalla.blit(fondo, (0, 0))
     pygame.draw.rect(pantalla, (120, 120, 120), suelo_rect)
+    pantalla.blit(roca, (400, suelo_y))
+    goku_x += 3  # velocidad
+
+    if goku_x > ANCHO:
+        goku_x = -100
+
+    pantalla.blit(goku, (goku_x, 100))
 
     # Dibujar personaje
     if atacando:
